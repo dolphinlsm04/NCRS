@@ -17,6 +17,20 @@ extern signed char selected_default_units[3];
 #define UNICODE_UBLOCK  L"\u2580"
 #define UNICODE_FBLOCK  L"\u2588"
 
+const wchar_t BBLOCK[] = UNICODE_BBLOCK;
+const wchar_t UBLOCK[] = UNICODE_UBLOCK;
+const wchar_t FBLOCK[] = UNICODE_FBLOCK;
+const int BLOCK_LEN = sizeof(FBLOCK)/sizeof(wchar_t);
+
+int wch_cmpn(const wchar_t * wch1, const wchar_t * wch2, int n){
+  int i;
+  for(i=0;i<n;i++){
+    if(wch1[i] != wch2[i])
+      return 0;
+  }
+  return 1;
+}  
+
 struct commands
 {
   const char *text;
@@ -24,23 +38,15 @@ struct commands
 };
 typedef struct commands COMMAND;
 
-/*
-cchar_t setcchar_out(const wchar_t *wch, const attr_t attrs,short color_pair){
-  cchar_t output;
-  setcchar(&output,wch,attrs,color_pair,NULL);
-  return output;
-}
-*/
-
 void update_progress_bar(double t,double max_t){
   int progress = (int)((t/max_t)*100);
   mvprintw(10,10,"%d%%",progress);
   int i;
   cchar_t ch;
-  setcchar(&ch,UNICODE_FBLOCK,A_NORMAL,COLOR_PAIR(2),NULL);
+  setcchar(&ch,UNICODE_FBLOCK,A_NORMAL,2,NULL);
   for(i=0;i<(progress/5);i++)
     mvadd_wch(10,15+i,&ch);
-  setcchar(&ch,UNICODE_FBLOCK,A_NORMAL,COLOR_PAIR(0),NULL);
+  setcchar(&ch,UNICODE_FBLOCK,A_NORMAL,0,NULL);
   for(;i<20;i++)
     mvadd_wch(10,15+i,&ch);
   refresh();
@@ -731,24 +737,32 @@ void loading_screen(FILE *f)
     int y_line = ((y_flip-1)/2)+1;
     bool ub = y_flip%2;  // 0 when BBLOCK, 1 when UBLOCK
 
-    cchar_t ch,prev_ch;
-    mvin_wch(y0+y_line,x0+x,&prev_ch);
-    /*
+    cchar_t cch, prev_cch;
+    mvin_wch(y0+y_line,x0+x,&prev_cch);
+    
+    wchar_t prev_wch[CCHARW_MAX];
+    attr_t prev_attr;
+    short prev_color;
+    
+    getcchar(&prev_cch, prev_wch, &prev_attr, &prev_color,NULL);
+    
     if(ub){
-      if(prev_ch==setcchar_out(UNICODE_BBLOCK,A_NORMAL, COLOR_PAIR(c)) || prev_ch==setcchar_out(UNICODE_FBLOCK,A_NORMAL, COLOR_PAIR(c)))
-	ch = setcchar_out(UNICODE_FBLOCK,A_NORMAL, COLOR_PAIR(c));
+      if((wch_cmpn(prev_wch, BBLOCK, BLOCK_LEN) || wch_cmpn(prev_wch, FBLOCK, BLOCK_LEN)) && (prev_color==c))
+      	setcchar(&cch, FBLOCK, A_NORMAL, c, NULL);
+      
       else
-	ch = setcchar_out(UNICODE_UBLOCK,A_NORMAL, COLOR_PAIR(c));
+      	setcchar(&cch, UBLOCK, A_NORMAL, c, NULL);
+    
     }
     else{
-      if(prev_ch==setcchar_out(UNICODE_UBLOCK,A_NORMAL, COLOR_PAIR(c)) || prev_ch==setcchar_out(UNICODE_FBLOCK,A_NORMAL, COLOR_PAIR(c)))
-	ch = setcchar_out(UNICODE_FBLOCK,A_NORMAL, COLOR_PAIR(c));
+      if((wch_cmpn(prev_wch, UBLOCK, BLOCK_LEN) || wch_cmpn(prev_wch, FBLOCK, BLOCK_LEN)) && (prev_color==c))
+      	setcchar(&cch, FBLOCK, A_NORMAL, c, NULL);
+      
       else
-	ch = setcchar_out(UNICODE_BBLOCK,A_NORMAL, COLOR_PAIR(c));
+      	setcchar(&cch, BBLOCK, A_NORMAL, c, NULL);
     }
     
-    mvadd_wch(y0+y_line,x0+x,&ch);
-    */
+    mvadd_wch(y0+y_line,x0+x,&cch);
   }
 
   refresh();
@@ -818,6 +832,7 @@ int main(int argc, char *argv[])
   init_pair(6,COLOR_WHITE,COLOR_BLUE);
 
   i=0;
+  nodelay(stdscr,TRUE);
   while(1)
     {
       loading_screen(file);
@@ -833,6 +848,8 @@ int main(int argc, char *argv[])
       napms(30);
     }
   erase();
+  nodelay(stdscr,FALSE);
+  cbreak();
   display_menu(old_option, new_option);
 
   while (1)
