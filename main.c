@@ -43,10 +43,10 @@ void update_progress_bar(double t,double max_t){
   mvprintw(10,10,"%d%%",progress);
   int i;
   cchar_t ch;
-  setcchar(&ch,UNICODE_FBLOCK,A_NORMAL,2,NULL);
+  setcchar(&ch,FBLOCK,A_NORMAL,2,NULL);
   for(i=0;i<(progress/5);i++)
     mvadd_wch(10,15+i,&ch);
-  setcchar(&ch,UNICODE_FBLOCK,A_NORMAL,0,NULL);
+  setcchar(&ch,FBLOCK,A_NORMAL,0,NULL);
   for(;i<20;i++)
     mvadd_wch(10,15+i,&ch);
   refresh();
