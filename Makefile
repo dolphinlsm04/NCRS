@@ -1,4 +1,4 @@
-LIBS = -D_DEFAULT_SOURCE -D_XOPEN_SOURCE=600 -lncursesw -ltinfo -ldrm -lm
+LIBS = $$(ncursesw5-config --cflags --libs) -ldrm -lm
 
 ncrs : main.o inputbox.o
 	gcc -o ncrs main.o inputbox.o $(LIBS)
