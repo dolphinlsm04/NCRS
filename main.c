@@ -22,6 +22,19 @@ const wchar_t UBLOCK[] = UNICODE_UBLOCK;
 const wchar_t FBLOCK[] = UNICODE_FBLOCK;
 const int BLOCK_LEN = sizeof(FBLOCK)/sizeof(wchar_t);
 
+const char time_unit_types[5] = {'y','d','h','m','s'};
+const char * file_size_units[4] = {"bytes","kB","MB","GB"};
+#define KILO 1000
+#define MEGA 1000000
+#define GIGA 1000000000
+
+struct commands
+{
+  const char *text;
+  void (*function)(WINDOW *);
+};
+typedef struct commands COMMAND;
+
 int wch_cmpn(const wchar_t * wch1, const wchar_t * wch2, int n){
   int i;
   for(i=0;i<n;i++){
@@ -30,13 +43,6 @@ int wch_cmpn(const wchar_t * wch1, const wchar_t * wch2, int n){
   }
   return 1;
 }  
-
-struct commands
-{
-  const char *text;
-  void (*function)(WINDOW *);
-};
-typedef struct commands COMMAND;
 
 void update_progress_bar(double t,double max_t){
   int progress = (int)((t/max_t)*100);
@@ -139,8 +145,6 @@ double circular_orbit_speed(double m1, double m2, double r){
 void n_body_sim(WINDOW *win){
   int i,j,k,key;
   int num_celest=0;
-   
-  erase();
     
   mvprintw(2,10,"[Number of Celestial bodies]");
 
@@ -358,6 +362,10 @@ void n_body_sim(WINDOW *win){
   cur_input = &name_inputs[0];
   while(i<num_celest)
     {
+      color_set(0,NULL);
+      mvaddstr(1,10,"                     ");
+      mvprintw(1,10,"<body_%d>",i+1);
+      
       draw_input(name_inputs+i);
       draw_input(mass_inputs+i);
       for(j=0;j<3;j++){
@@ -489,11 +497,6 @@ void n_body_sim(WINDOW *win){
   repeat=1;
   cur_input = max_t_inputs;
   double temp_max_t,temp_delta_t;
-  char time_unit_types[5] = {'y','d','h','m','s'};
-  char * file_size_units[4] = {"bytes","kB","MB","GB"};
-#define KILO 1000
-#define MEGA 1000000
-#define GIGA 1000000000
   while(repeat)
     {
       temp_max_t = 0;
@@ -708,7 +711,56 @@ void n_body_sim(WINDOW *win){
 }
 
 void cr3bp_sim(WINDOW *win){
+  int i,j,k,key;
+  int num_celest=0;
 
+  char set_mode = 0;
+  mvaddstr(2,10,"[Set Mode]");
+  InputBox set_mode_inputs[2];
+  set_mode_inputs[0]=make_radio_input(0,0,3,10,7,"Manual");
+  set_mode_inputs[1]=make_radio_input(0,1,3,19,38,"JPL Three-Body Periodic Orbit Catalog");
+  h_connect_input(set_mode_inputs,set_mode_inputs+1);
+
+  InputBox * cur_input = set_mode_inputs;
+  bool repeat=1;
+  while(repeat){
+    for(i=0;i<2;i++)
+      draw_input(set_mode_inputs+i);
+    draw_cur_input(cur_input);
+    
+    noecho();
+    keypad(stdscr, TRUE);
+    raw();
+    key = getch();
+    switch(key){
+    case KEY_LEFT:
+      if(cur_input->left_input!=NULL)
+	cur_input = cur_input->left_input;
+      break;
+    case KEY_RIGHT:
+      if(cur_input->right_input!=NULL)
+	cur_input = cur_input->right_input;
+      break;
+
+    case 10:
+    case 13:
+    case KEY_ENTER:
+      set_mode = cur_input->ridx;
+      repeat=0;
+      break;
+    default:
+      break;
+    }
+  }
+
+  switch(set_mode){
+  case 0:
+
+  case 1:
+    
+  }
+  
+  return;
 }
 
 #define MAX_OPTIONS (2)
